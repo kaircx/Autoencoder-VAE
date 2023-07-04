@@ -1,2 +1,2 @@
-# MLP_DynamicSystemModeling
-MLPによる動力学モデルの学習
+# Autoencoder_VAE
+Autoencoder_VAE
