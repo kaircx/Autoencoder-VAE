@@ -19,6 +19,6 @@ if [[ ! $UID  ]]; then
     exit 1
 fi
 
-docker build -t torch_on_jupyter \
+docker build -t m1tutorial_autoencoder_vae \
        --build-arg uname=$USER --build-arg uid=$(id -u) --build-arg gid=$(id -g) --build-arg password=$1 \
        .

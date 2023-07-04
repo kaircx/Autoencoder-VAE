@@ -9,7 +9,7 @@ RUN sed -i 's@archive.ubuntu.com@ftp.jaist.ac.jp/pub/Linux@g' /etc/apt/sources.l
 ENV NVIDIA_DRIVER_CAPABILITIES ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
 
 # Install jupyterlab+.
-RUN pip3 install jupyterlab matplotlib==3.3.4 seaborn pandas ipywidgets==7.7.2 tensorboard captum Flask-Compress
+RUN pip3 install jupyterlab matplotlib==3.3.4 seaborn pandas ipywidgets==7.7.2 tensorboard captum Flask-Compress tensorflow
 # For captum insights
 RUN pip3 install gdbgui==0.15.1.0
 # for rl-tutorials (dqn only)
