@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo ""
-echo "Building image torch_jupyter_naist"
+echo "Building image m1tutorial_autoencoder_vae"
 
 if [[ ! $1 ]]; then
     echo "You need to specify as password for this image, like so: sudo docker_build.sh my_password"

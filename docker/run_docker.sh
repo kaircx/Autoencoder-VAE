@@ -9,4 +9,4 @@ docker run --name m1tutorial_autoencoder_vae -it --rm -d --gpus all --ipc=host \
            -p 63333:63333 \
            -p 6003:6003 \
            -p 6004:6004 \
-           torch_on_jupyter jupyter lab --config='./Autoencoder-VAE/jupyter_lab_config.py'
+           m1tutorial_autoencoder_vae jupyter lab --config='./Autoencoder-VAE/jupyter_lab_config.py'
