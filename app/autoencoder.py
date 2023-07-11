@@ -1,4 +1,5 @@
 import dl_MNIST
+import args
 
 import torch
 import torch.nn as nn
@@ -47,10 +48,11 @@ class AutoEncoder(nn.Module):
         result_decoder = self.decoder(result_encoder)
         return result_decoder
 
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') # cudaが利用可能ならGPU,そうでないならcpu
-model = AutoEncoder(28*28, 2).to(device)
+model = AutoEncoder(28*28, args.dimention).to(device)
 criterion = nn.BCELoss() # 誤差関数
-number_of_epochs = 10 # エポック数
+number_of_epochs = args.epochs # エポック数
 optimizer = optim.Adam(model.parameters(), lr = 0.001) # OptimizerとしてAdam(学習率: 0.001)を採用
 
 loss_values = []
