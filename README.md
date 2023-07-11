@@ -10,8 +10,8 @@ Autoencoder_VAE
 |6004|予備|
 
 # docker内への入り方
-'docekr exec -it m1tutorial_autoencoder_vae bash'
+`docekr exec -it m1tutorial_autoencoder_vae bash`
 
 # tokenの確認方法
 コンテナ内で
-'jupyter server list'
+`jupyter server list`
