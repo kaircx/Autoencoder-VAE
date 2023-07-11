@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser(
             add_help=True
             )
 
-# 中間層の次元数
+# 潜在空間の次元数
 parser.add_argument('-d', '--dimention', default=2, required=False, type=int)
 # バッチサイズ
 parser.add_argument('-b', '--batchsize', default=256, required=False, type=int)
