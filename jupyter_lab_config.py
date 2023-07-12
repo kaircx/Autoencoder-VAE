@@ -2,7 +2,7 @@
 from getpass import getuser
 
 uname = getuser()
-
+print("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH")
 c = get_config()  #noqa
 
 #------------------------------------------------------------------------------
