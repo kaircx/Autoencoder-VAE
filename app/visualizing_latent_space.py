@@ -7,7 +7,7 @@ import numpy as np
 from torch.autograd import Variable
 
 # 学習済のモデルを読み込む
-autoencoder.model.load_state_dict(torch.load('./autoencoder.pth', map_location=lambda storage, loc: storage))
+autoencoder.model.load_state_dict(torch.load('{}/../autoencoder.pth'.format(dl_MNIST.path), map_location=lambda storage, loc: storage))
 
 test_batchsize = 10000
 test_loader = dl_MNIST.DataLoader(dl_MNIST.test_data, batch_size=test_batchsize, shuffle=False)

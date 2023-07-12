@@ -75,4 +75,4 @@ for an_epoch in range(number_of_epochs):
     loss_values.append(loss_average)
     print('epoch [{}/{}], loss: {:.4f}'.format(an_epoch + 1, number_of_epochs, loss_values[an_epoch]))
 
-torch.save(model.state_dict(), './autoencoder.pth') # 学習済のモデルを保存する
+torch.save(model.state_dict(), '{}/../autoencoder.pth'.format(dl_MNIST.path)) # 学習済のモデルを保存する
