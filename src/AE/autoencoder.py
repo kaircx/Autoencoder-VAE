@@ -49,29 +49,58 @@ class AutoEncoder(nn.Module):
         return result_decoder
 
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') # cudaが利用可能ならGPU,そうでないならcpu
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') # cudaが利用可能ならGPU,そうでないならcpuをセット
 model = AutoEncoder(28*28, args.dimention).to(device)
-criterion = nn.BCELoss() # 誤差関数
+criterion = nn.BCELoss() # 誤差関数として交差エントロピー誤差を採用
 number_of_epochs = args.epochs # エポック数
 optimizer = optim.Adam(model.parameters(), lr = 0.001) # OptimizerとしてAdam(学習率: 0.001)を採用
 
-loss_values = []
+loss_train_values = []
+loss_valid_values = []
+
+loss_by_batch = []
 for an_epoch in range(number_of_epochs):
-    loss_sum = 0.0
     count = 0
-    for input, t in dl_MNIST.train_loader:
+    loss_train_sum = 0.0
+    model.train() # 訓練モードに変更する
+    for image, label in train_loader:
         optimizer.zero_grad()
         
-        model.train()
-        input = input.view(input.size(0), -1)
-        input = input.to(device)
-        result_autoencoder = model(input)
-        loss = criterion(result_autoencoder, input)
-        loss_sum = loss_sum + loss
+        image = image.view(image.size(0), -1)
+        image = image.to(device)
+        result_autoencoder = model(image)
+        loss = criterion(result_autoencoder, image) #入力画像と出力画像の誤差を計算する
+        loss_train_sum = loss_train_sum + loss
         
         loss.backward()
         optimizer.step()
+
+        # バッチごとの誤差
+        loss_by_batch.append(loss.data)
+        
         count = count + 1
-    loss_average = loss_sum / (count+1)
-    loss_values.append(loss_average)
-    print('epoch [{}/{}], loss: {:.4f}'.format(an_epoch + 1, number_of_epochs, loss_values[an_epoch]))
+
+    loss_train_average = loss_train_sum / count   
+    loss_train_values.append(loss_train_average)
+    print('epoch [{}/{}], train_loss: {:.4f}'.format(an_epoch + 1, number_of_epochs, loss_train_values[an_epoch]))
+
+    count = 0
+    loss_valid_sum = 0.0
+    model.eval() # 検証モードに変更
+    for image, label in valid_loader:
+        image = image.view(image.size(0), -1)
+        image = image.to(device)
+        result_autoencoder = model(image)
+        loss = criterion(result_autoencoder, image) #入力画像と出力画像の誤差を計算する
+        loss_valid_sum = loss_valid_sum + loss
+
+        count = count + 1
+        
+    loss_valid_average = loss_valid_sum / count   
+    loss_valid_values.append(loss_valid_average)
+    print('epoch [{}/{}], valid_loss: {:.4f}'.format(an_epoch + 1, number_of_epochs, loss_valid_values[an_epoch]))
+
+## 学習済のモデルを保存する ##
+if not os.path.exists("{}/../saved_model/AE/".format(dl_MNIST,path)):
+    os.makedirs("{}/../saved_model/AE/".format(dl_MNIST,path))
+torch.save(model.state_dict(), '{}/../saved_model/AE/autoencoder.pth'.format(dl_MNIST.path))
