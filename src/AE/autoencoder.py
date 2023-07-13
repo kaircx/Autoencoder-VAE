@@ -1,6 +1,7 @@
 import dl_MNIST
 import args
 
+import os
 import torch
 import torch.nn as nn
 from torch import optim
@@ -63,7 +64,7 @@ for an_epoch in range(number_of_epochs):
     count = 0
     loss_train_sum = 0.0
     model.train() # 訓練モードに変更する
-    for image, label in train_loader:
+    for image, label in dl_MNIST.train_loader:
         optimizer.zero_grad()
         
         image = image.view(image.size(0), -1)
@@ -87,7 +88,7 @@ for an_epoch in range(number_of_epochs):
     count = 0
     loss_valid_sum = 0.0
     model.eval() # 検証モードに変更
-    for image, label in valid_loader:
+    for image, label in dl_MNIST.valid_loader:
         image = image.view(image.size(0), -1)
         image = image.to(device)
         result_autoencoder = model(image)
@@ -101,6 +102,6 @@ for an_epoch in range(number_of_epochs):
     print('epoch [{}/{}], valid_loss: {:.4f}'.format(an_epoch + 1, number_of_epochs, loss_valid_values[an_epoch]))
 
 ## 学習済のモデルを保存する ##
-if not os.path.exists("{}/../saved_model/AE/".format(dl_MNIST,path)):
-    os.makedirs("{}/../saved_model/AE/".format(dl_MNIST,path))
+if not os.path.exists("{}/../saved_model/AE/".format(dl_MNIST.path)):
+    os.makedirs("{}/../saved_model/AE/".format(dl_MNIST.path))
 torch.save(model.state_dict(), '{}/../saved_model/AE/autoencoder.pth'.format(dl_MNIST.path))
