@@ -1,6 +1,7 @@
 import os # tensorboardの出力先作成
 import matplotlib.pyplot as plt # 可視化
 import numpy as np # 計算
+import argparse
 import torch # 機械学習フレームワークとしてpytorchを使用
 import torch.nn as nn # クラス内で利用するモジュールのため簡略化
 import torch.nn.functional as F # クラス内で利用するモジュールのため簡略化
@@ -16,6 +17,18 @@ path=os.path.dirname(os.path.abspath(__file__))
 if not os.path.exists(path+"/../../logs/VAE"):
     os.makedirs(path+"/../../logs/VAE")
 
+    
+# argparseを使用してコマンドラインからハイパーパラメータを設定
+parser = argparse.ArgumentParser(description='Train a VAE on the MNIST dataset')
+parser.add_argument('--z_dim', type=int, default=20, help='Dimension of the latent variables')
+parser.add_argument('--lr', type=float, default=0.001, help='Learning rate for the optimizer')
+parser.add_argument('--epochs', type=int, default=1000, help='Number of training epochs')
+parser.add_argument('--batch_size', type=int, default=1000, help='Batch size for the dataloader')
+parser.add_argument('--enc_units', type=int, default=400, help='Number of units in the encoder layers')
+parser.add_argument('--dec_units', type=int, default=400, help='Number of units in the decoder layers')
+args = parser.parse_args()
+
+
 # MNISTのデータをとってくるときに一次元化する前処理
 transform = transforms.Compose([transforms.ToTensor(), transforms.Lambda(lambda x: x.view(-1))])
 
@@ -30,91 +43,42 @@ size_valid = size_train_valid - size_train # 12000
 dataset_train, dataset_valid = torch.utils.data.random_split(dataset_train_valid, [size_train, size_valid])
 
 # 取得したデータセットをDataLoader化する
-dataloader_train = torch.utils.data.DataLoader(dataset_train, batch_size=1000, shuffle=True)
-dataloader_valid = torch.utils.data.DataLoader(dataset_valid, batch_size=1000, shuffle=False)
-dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1000, shuffle=False)
+dataloader_train = torch.utils.data.DataLoader(dataset_train, batch_size=args.batch_size, shuffle=True)
+dataloader_valid = torch.utils.data.DataLoader(dataset_valid, batch_size=args.batch_size, shuffle=False)
+dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=args.batch_size, shuffle=False)
+
 
 class VAE(nn.Module):
-    def __init__(self, z_dim):
-        """コンストラクタ
-
-        Args:
-            z_dim (int): 潜在空間の次元数
-
-        Returns:
-            None.
-
-        Note:
-            eps (float): オーバーフローとアンダーフローを防ぐための微小量
-        """
-        super(VAE, self).__init__() # VAEクラスはnn.Moduleを継承しているため親クラスのコンストラクタを呼ぶ必要がある
-        self.eps = np.spacing(1) # オーバーフローとアンダーフローを防ぐための微小量
-        self.x_dim = 28 * 28 # MNISTの場合は28×28の画像であるため
-        self.z_dim = z_dim # インスタンス化の際に潜在空間の次元数は自由に設定できる
-        self.enc_fc1 = nn.Linear(self.x_dim, 400) # エンコーダ1層目
-        self.enc_fc2 = nn.Linear(400, 200) # エンコーダ2層目
-        self.enc_fc3_mean = nn.Linear(200, z_dim) # 近似事後分布の平均
-        self.enc_fc3_logvar = nn.Linear(200, z_dim) # 近似事後分布の分散の対数
-        self.dec_fc1 = nn.Linear(z_dim, 200) # デコーダ1層目
-        self.dec_fc2 = nn.Linear(200, 400) # デコーダ2層目
-        self.dec_drop = nn.Dropout(p=0.2) # 過学習を防ぐために最終層の直前にドロップアウト
-        self.dec_fc3 = nn.Linear(400, self.x_dim) # デコーダ3層目
+    def __init__(self, z_dim, enc_units, dec_units):
+        super(VAE, self).__init__()
+        self.eps = np.spacing(1)
+        self.x_dim = 28 * 28
+        self.z_dim = z_dim
+        self.enc_fc1 = nn.Linear(self.x_dim, enc_units)
+        self.enc_fc2 = nn.Linear(enc_units, enc_units//2)
+        self.enc_fc3_mean = nn.Linear(enc_units//2, z_dim)
+        self.enc_fc3_logvar = nn.Linear(enc_units//2, z_dim)
+        self.dec_fc1 = nn.Linear(z_dim, dec_units)
+        self.dec_fc2 = nn.Linear(dec_units, dec_units)
+        self.dec_drop = nn.Dropout(p=0.2)
+        self.dec_fc3 = nn.Linear(dec_units, self.x_dim)
 
     def encoder(self, x):
-        """エンコーダ
-
-        Args:
-            x (torch.tensor): (バッチサイズ, 入力次元数)サイズの入力データ
-
-        Returns:
-            mean (torch.tensor): 近似事後分布の平均
-            logvar (torch.tensor): 近似事後分布の分散の対数
-        """
         x = F.relu(self.enc_fc1(x))
         x = F.relu(self.enc_fc2(x))
         return self.enc_fc3_mean(x), self.enc_fc3_logvar(x)
 
     def sample_z(self, mean, log_var, device):
-        """Reparameterization trickに基づく潜在変数Zの疑似的なサンプリング
-
-        Args:
-            mean (torch.tensor): 近似事後分布の平均
-            logvar (torch.tensor): 近似事後分布の分散の対数
-            device (String): GPUが使える場合は"cuda"でそれ以外は"cpu"
-
-        Returns:
-            z (torch.tensor): (バッチサイズ, z_dim)サイズの潜在変数
-        """
         epsilon = torch.randn(mean.shape, device=device)
         return mean + epsilon * torch.exp(0.5 * log_var)
 
     def decoder(self, z):
-        """デコーダ
-
-        Args:
-            z (torch.tensor): (バッチサイズ, z_dim)サイズの潜在変数
-
-        Returns:
-            y (torch.tensor): (バッチサイズ, 入力次元数)サイズの再構成データ
-        """
         z = F.relu(self.dec_fc1(z))
         z = F.relu(self.dec_fc2(z))
         z = self.dec_drop(z)
         return torch.sigmoid(self.dec_fc3(z))
 
     def forward(self, x, device):
-        """順伝播処理
-
-        Args:
-            x (torch.tensor): (バッチサイズ, 入力次元数)サイズの入力データ
-            device (String): GPUが使える場合は"cuda"でそれ以外は"cpu"
-
-        Returns:
-            KL (torch.float): KLダイバージェンス
-            reconstruction (torch.float): 再構成誤差
-            z (torch.tensor): (バッチサイズ, z_dim)サイズの潜在変数
-            y (torch.tensor): (バッチサイズ, 入力次元数)サイズの再構成データ            
-        """
         mean, log_var = self.encoder(x.to(device)) # encoder部分
         z = self.sample_z(mean, log_var, device) # Reparameterization trick部分
         y = self.decoder(z.to(device)).to(device) # decoder部分
@@ -124,21 +88,14 @@ class VAE(nn.Module):
 
 
 # VAEクラスのコンストラクタに潜在変数の次元数を渡す
-model = VAE(20).to(device)
-
-# 今回はoptimizerとしてAdamを利用
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-# 最大更新回数は1000回
-num_epochs = 1000
-# 検証データのロスとその最小値を保持するための変数を十分大きな値で初期化しておく
+model = VAE(args.z_dim, args.enc_units, args.dec_units).to(device)
+optimizer = optim.Adam(model.parameters(), lr=args.lr)
+num_epochs = args.epochs
 loss_valid = 10 ** 7
 loss_valid_min = 10 ** 7
-# early stoppingを判断するためのカウンタ変数
 num_no_improved = 0
-# tensorboardに記録するためのカウンタ変数
 num_batch_train = 0
 num_batch_valid = 0
-# tensorboardでモニタリングする
 writer = SummaryWriter(log_dir=path+"/../../logs/VAE")
 
 # 学習開始
@@ -178,7 +135,7 @@ for num_iter in range(num_epochs):
         num_no_improved = 0
         if not os.path.exists(path+"/../../saved_model/VAE"):
             os.makedirs(path+"/../../saved_model/VAE")
-        torch.save(model.state_dict(), path+"/../../saved_model/VAE/z_{model.z_dim}.pth")
+        torch.save(model.state_dict(), path+f"/../../saved_model/VAE/z_{model.z_dim}.pth")
     # カウンタ変数が10回に到達したらearly stopping
     if (num_no_improved >= 10):
         print(f"{num_no_improved}回連続でValidationが悪化したため学習を止めます")
