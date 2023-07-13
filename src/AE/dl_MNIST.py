@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 transform = T.Compose([T.ToTensor()])
 
 #バッチサイズの指定
-batchsize = args.batch_size
+batchsize = args.batchsize
 
 # パスの指定
 path = os.path.dirname(os.path.abspath(__file__))
