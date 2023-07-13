@@ -19,7 +19,3 @@ args = parser.parse_args()
 dimention = args.dimention
 batchsize = args.batchsize
 epochs = args.epochs
-
-print('d: {}'.format(args.dimention))
-print('b: {}'.format(args.batchsize))
-print('e: {}'.format(args.epochs))
