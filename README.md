@@ -25,7 +25,7 @@ source run_docker.sh
 |6004|予備|
 
 # docker内への入り方
-`docekr exec -it m1tutorial_autoencoder_vae bash`
+`docker exec -it m1tutorial_autoencoder_vae bash`
 
 # tokenの確認方法
 コンテナ内で
